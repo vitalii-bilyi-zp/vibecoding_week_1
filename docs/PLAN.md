@@ -136,20 +136,23 @@ Success criteria:
 
 ---
 
-## Part 5: Database modeling
+## Part 5: Database modeling - DONE
 
 Goal: design the SQLite schema for the Kanban (multi-user capable) and get sign-off. No code wiring yet.
 
 Substeps:
-- [ ] Propose a relational schema supporting: multiple users; one board per user (MVP) but extensible to many;
+- [x] Propose a relational schema supporting: multiple users; one board per user (MVP) but extensible to many;
       columns (ordered, renamable, fixed set for MVP); cards (title, details, position within column).
-- [ ] Represent the board state so it can be serialized to/from the frontend `BoardData` JSON shape
+- [x] Represent the board state so it can be serialized to/from the frontend `BoardData` JSON shape
       (`columns[]` with ordered `cardIds`, `cards` keyed by id).
-- [ ] Document the schema and rationale in `docs/DATABASE.md` (tables, columns, types, keys, relationships,
+- [x] Document the schema and rationale in `docs/DATABASE.md` (tables, columns, types, keys, relationships,
       how ordering is stored, how it maps to the frontend JSON).
-- [ ] Include the seed/initial board definition strategy (what a new user's board looks like).
-- [ ] Note the JSON representation used by the API.
-- [ ] Get explicit user sign-off on `docs/DATABASE.md` before Part 6.
+- [x] Include the seed/initial board definition strategy (what a new user's board looks like).
+- [x] Note the JSON representation used by the API.
+- [x] Get explicit user sign-off on `docs/DATABASE.md` before Part 6.
+
+Decisions (signed off): save via full-replace `PUT /api/board`; a new board seeds 5 empty
+columns (Backlog, Discovery, In Progress, Review, Done) with no cards.
 
 Tests:
 - No automated tests (design only). Validation = the documented schema can represent the existing
