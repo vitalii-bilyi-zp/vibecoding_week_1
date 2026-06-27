@@ -165,20 +165,20 @@ Success criteria:
 
 ---
 
-## Part 6: Backend API for the Kanban
+## Part 6: Backend API for the Kanban - DONE
 
 Goal: implement API routes to read and modify a user's Kanban, backed by SQLite. DB auto-created.
 
 Substeps:
-- [ ] Add SQLite access in the backend (lightweight; create DB + tables if missing at startup, using
+- [x] Add SQLite access in the backend (lightweight; create DB + tables if missing at startup, using
       `DATABASE_PATH`).
-- [ ] Implement the schema from `docs/DATABASE.md` as migrations or create-table-on-startup.
-- [ ] `GET /api/board` - return the current user's board as `BoardData` JSON (create a seeded board if none).
-- [ ] `PUT /api/board` - replace/update the current user's board from `BoardData` JSON.
-- [ ] (As needed) finer-grained routes for card create/edit/move and column rename, OR keep a single
-      board PUT - choose the simpler approach that the frontend can use cleanly; document the choice.
-- [ ] Identify the user for MVP (single hardcoded user is acceptable; keep multi-user-ready).
-- [ ] Backend unit tests (`pytest`) covering: empty DB seeds a board; read; update; move a card; rename a
+- [x] Implement the schema from `docs/DATABASE.md` as migrations or create-table-on-startup.
+- [x] `GET /api/board` - return the current user's board as `BoardData` JSON (create a seeded board if none).
+- [x] `PUT /api/board` - replace/update the current user's board from `BoardData` JSON.
+- [x] Chose the simpler approach: a single full-replace board `PUT` (signed off in Part 5); no
+      finer-grained routes.
+- [x] Identify the user for MVP (single hardcoded user is acceptable; keep multi-user-ready).
+- [x] Backend unit tests (`pytest`) covering: empty DB seeds a board; read; update; move a card; rename a
       column; persistence across requests; DB file auto-created when absent.
 
 Tests:

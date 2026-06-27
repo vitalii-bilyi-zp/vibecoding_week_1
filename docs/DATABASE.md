@@ -166,3 +166,13 @@ This keeps the frontend and backend on one shared contract.
   uses the first board.
 - The fixed 5-column rule is a product constraint, not a DB constraint - the schema allows
   any number of columns.
+
+### Known limitation: globally-unique column/card ids
+
+`columns.id` and `cards.id` are global TEXT primary keys, and a new board is seeded with the
+fixed ids `col-backlog`...`col-done`. With a single user (the MVP) this is fine. But if two
+users each got a seeded board, both would try to insert `col-backlog` and collide on the
+primary key. True multi-user support therefore needs the client-facing id to be unique
+*per board* rather than globally - e.g. give `columns`/`cards` a surrogate integer primary
+key and store the string id in a `client_id` column with `UNIQUE(board_id, client_id)`.
+This is an additive change (the API shape does not change) and is intentionally deferred.
