@@ -48,24 +48,24 @@ Success criteria:
 
 ---
 
-## Part 2: Scaffolding
+## Part 2: Scaffolding - DONE
 
 Goal: stand up the Docker + FastAPI skeleton and start/stop scripts. Serve a placeholder
 static page and one example API call. No Kanban yet.
 
 Substeps:
-- [ ] Create `backend/` FastAPI app: entry `backend/app/main.py` with a FastAPI instance.
-- [ ] Add `GET /api/health` returning `{"status": "ok"}`.
-- [ ] Add `GET /api/hello` returning `{"message": "hello world"}` (the example API call).
-- [ ] Mount a static directory so `GET /` serves a placeholder `index.html` ("Hello from FastAPI").
-- [ ] Set up `uv` in the backend: `backend/pyproject.toml` with deps (`fastapi`, `uvicorn[standard]`),
+- [x] Create `backend/` FastAPI app: entry `backend/app/main.py` with a FastAPI instance.
+- [x] Add `GET /api/health` returning `{"status": "ok"}`.
+- [x] Add `GET /api/hello` returning `{"message": "hello world"}` (the example API call).
+- [x] Mount a static directory so `GET /` serves a placeholder `index.html` ("Hello from FastAPI").
+- [x] Set up `uv` in the backend: `backend/pyproject.toml` with deps (`fastapi`, `uvicorn[standard]`),
       and `uv.lock`.
-- [ ] Write `backend/Dockerfile` using `uv` to install deps and run uvicorn; expose port 8000.
-- [ ] Add `docker-compose.yml` (or documented `docker run`) wiring port 8000 and bind-mounting
+- [x] Write `backend/Dockerfile` using `uv` to install deps and run uvicorn; expose port 8000.
+- [x] Add `docker-compose.yml` (or documented `docker run`) wiring port 8000 and bind-mounting
       `./data` for future SQLite.
-- [ ] Write start/stop scripts in `scripts/`: `start.sh`/`stop.sh` (Mac/Linux) and `start.ps1`/`stop.ps1` (PC).
-- [ ] Update `backend/CLAUDE.md` describing the backend structure.
-- [ ] Add `backend/tests/test_health.py` with pytest tests for `/api/health` and `/api/hello`.
+- [x] Write start/stop scripts in `scripts/`: `start.sh`/`stop.sh` (Mac/Linux) and `start.ps1`/`stop.ps1` (PC).
+- [x] Update `backend/CLAUDE.md` describing the backend structure.
+- [x] Add `backend/tests/test_health.py` with pytest tests for `/api/health` and `/api/hello`.
 
 Tests:
 - `pytest` in `backend/` passes (health + hello endpoints).

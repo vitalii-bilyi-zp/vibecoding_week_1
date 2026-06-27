@@ -174,3 +174,9 @@ cython_debug/
 
 .DS_Store
 
+# SQLite database files (the data/ dir is tracked via .gitkeep)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+

@@ -1,0 +1,10 @@
+services:
+  app:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persist the SQLite database on the host (used from Part 6 onward).
+      - ./data:/app/data
