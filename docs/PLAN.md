@@ -80,22 +80,22 @@ Success criteria:
 
 ---
 
-## Part 3: Add in Frontend
+## Part 3: Add in Frontend - DONE
 
 Goal: statically build the existing Next.js demo and have FastAPI serve it at `/`, so the
 demo Kanban board (in-memory) is displayed.
 
 Substeps:
-- [ ] Set `output: 'export'` in `frontend/next.config.ts` and confirm a static export works
+- [x] Set `output: 'export'` in `frontend/next.config.ts` and confirm a static export works
       (`next build` produces an `out/` directory). Remove/avoid any SSR-only features.
-- [ ] Verify drag-and-drop and add/remove still work as a static export (client-only is fine).
-- [ ] Wire the build: produce the static site and place it where FastAPI serves it (e.g. copy `out/`
+- [x] Verify drag-and-drop and add/remove still work as a static export (client-only is fine).
+- [x] Wire the build: produce the static site and place it where FastAPI serves it (e.g. copy `out/`
       into the backend static dir during Docker build).
-- [ ] Update `backend/Dockerfile` (multi-stage: Node build of frontend, then Python runtime) so the
+- [x] Update `backend/Dockerfile` (multi-stage: Node build of frontend, then Python runtime) so the
       container builds the frontend and serves it.
-- [ ] FastAPI serves the exported site at `/` (and static assets), keeping `/api/*` working.
-- [ ] Keep existing frontend unit tests passing; keep/extend Playwright e2e to run against the
-      served static site.
+- [x] FastAPI serves the exported site at `/` (and static assets), keeping `/api/*` working.
+- [x] Keep existing frontend unit tests passing; keep/extend Playwright e2e to run against the
+      served static site (via `E2E_BASE_URL`).
 
 Tests:
 - Frontend: `npm run test:unit` and `npm run test:e2e` pass.

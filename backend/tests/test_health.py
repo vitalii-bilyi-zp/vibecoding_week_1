@@ -18,6 +18,9 @@ def test_hello():
 
 
 def test_root_serves_static_page():
+    # Locally this is the placeholder page; in the Docker image it is the
+    # Next.js export. Either way / must serve an HTML document.
     response = client.get("/")
     assert response.status_code == 200
-    assert "Hello from FastAPI" in response.text
+    assert "text/html" in response.headers["content-type"]
+    assert "<html" in response.text.lower()

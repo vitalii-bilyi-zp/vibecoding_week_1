@@ -1,8 +1,9 @@
-# Frontend (existing demo)
+# Frontend
 
-A frontend-only Next.js demo of the Kanban board. State lives in React memory only -
-there is no backend, no auth, and no persistence yet. Reloading the page resets the board
-to `initialData`. Later plan parts wire this to the FastAPI backend, add auth, and add the AI sidebar.
+A Next.js Kanban board, statically exported (`output: "export"`) and served by the FastAPI
+backend at `/`. State currently lives in React memory only - there is no auth or persistence
+yet. Reloading the page resets the board to `initialData`. Later plan parts add auth, backend
+persistence, and the AI sidebar.
 
 ## Stack
 
@@ -73,14 +74,21 @@ the integration points to swap local `setBoard` updates for API calls.
 ```bash
 npm install
 npm run dev          # dev server on :3000
-npm run build        # production build (currently a Next server build, not static export)
+npm run build        # static export to ./out (output: "export")
 npm run test:unit    # vitest run
 npm run test:e2e     # playwright (auto-starts dev server)
 npm run lint         # eslint
 ```
 
+The build is a static export (`output: "export"` in `next.config.ts`), producing `out/`. The
+Docker build (see `backend/Dockerfile`) builds this and copies `out/` into the backend's
+`app/static`, so FastAPI serves it at `/`. SSR / Next route handlers must not be relied upon.
+
+E2E against the running container: set `E2E_BASE_URL` (e.g. `http://127.0.0.1:8000`) and run
+`npx playwright test` - Playwright then targets that URL instead of starting a dev server.
+
 ## Known gaps for the full app
 
-- Build is a standard Next server build. Plan Part 3 switches to `output: 'export'` so FastAPI can serve
-  static files. SSR / Next route handlers must not be relied upon.
-- No backend, no API client, no auth, no persistence, no AI sidebar - all added in later plan parts.
+- No API client, no auth, no persistence, no AI sidebar - all added in later plan parts. Board
+  handlers in `KanbanBoard` (`onRename`, `onAddCard`, `onDeleteCard`, drag move) are the
+  integration points for backend persistence.
