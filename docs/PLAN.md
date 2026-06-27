@@ -110,19 +110,19 @@ Success criteria:
 
 ---
 
-## Part 4: Fake user sign in
+## Part 4: Fake user sign in - DONE
 
 Goal: gate the board behind a dummy login (`user` / `password`) with logout. Still in-memory board.
 
 Substeps:
-- [ ] Add a login screen shown on first visit to `/` when not authenticated.
-- [ ] Accept only `user` / `password`; show an error on wrong credentials.
-- [ ] On success, show the Kanban board; persist auth across reloads (e.g. localStorage or cookie/session).
-- [ ] Add a logout control that returns to the login screen.
-- [ ] Decide and document where auth is enforced (client-side gate for MVP is acceptable since the board
-      is still in-memory; note this clearly).
-- [ ] Frontend unit tests for the login form (success, failure, logout).
-- [ ] Playwright e2e: cannot see board before login; login reveals board; logout hides it.
+- [x] Add a login screen shown on first visit to `/` when not authenticated.
+- [x] Accept only `user` / `password`; show an error on wrong credentials.
+- [x] On success, show the Kanban board; persist auth across reloads (e.g. localStorage or cookie/session).
+- [x] Add a logout control that returns to the login screen.
+- [x] Decide and document where auth is enforced (client-side gate for MVP is acceptable since the board
+      is still in-memory; note this clearly). Documented in `frontend/CLAUDE.md` and `lib/auth.ts`.
+- [x] Frontend unit tests for the login form (success, failure, logout).
+- [x] Playwright e2e: cannot see board before login; login reveals board; logout hides it.
 
 Tests:
 - Frontend: `npm run test:unit` and `npm run test:e2e` pass, including new auth tests.

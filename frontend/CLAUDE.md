@@ -1,9 +1,9 @@
 # Frontend
 
 A Next.js Kanban board, statically exported (`output: "export"`) and served by the FastAPI
-backend at `/`. State currently lives in React memory only - there is no auth or persistence
-yet. Reloading the page resets the board to `initialData`. Later plan parts add auth, backend
-persistence, and the AI sidebar.
+backend at `/`. A dummy login (`user` / `password`) gates the board; the board state itself
+still lives in React memory only (no backend persistence yet), so reloading resets it to
+`initialData`. Later plan parts add backend persistence and the AI sidebar.
 
 ## Stack
 
@@ -19,11 +19,15 @@ persistence, and the AI sidebar.
 src/
   app/
     layout.tsx       Root layout; loads Space Grotesk (display) + Manrope (body) fonts, sets metadata
-    page.tsx         Renders <KanbanBoard /> at /
+    page.tsx         Renders <App /> at /
     globals.css      Tailwind import + CSS custom properties (color tokens, fonts)
     favicon.ico
   components/
-    KanbanBoard.tsx        Top-level board; owns ALL board state and handlers (client component)
+    App.tsx                Auth gate: shows LoginForm or KanbanBoard based on session (client)
+    App.test.tsx           Auth gate flow tests (login, logout, persisted session)
+    LoginForm.tsx          Dummy login form (user/password), shows error on bad creds
+    LoginForm.test.tsx     LoginForm tests
+    KanbanBoard.tsx        Top-level board; owns ALL board state and handlers; optional onLogout
     KanbanColumn.tsx       One column: droppable, editable title input, lists cards, hosts NewCardForm
     KanbanCard.tsx         One card: sortable/draggable, shows title + details, Remove button
     KanbanCardPreview.tsx  Static card visual used inside the drag overlay
@@ -32,6 +36,8 @@ src/
   lib/
     kanban.ts        Types + pure helpers (NO React). The data model and move logic.
     kanban.test.ts   Unit tests for moveCard / helpers
+    auth.ts          Credential check + localStorage session helpers (client-side gate)
+    auth.test.ts     Unit tests for auth helpers
   test/
     setup.ts         Vitest setup (jest-dom matchers)
     vitest.d.ts      Type augmentation for matchers
@@ -87,8 +93,15 @@ Docker build (see `backend/Dockerfile`) builds this and copies `out/` into the b
 E2E against the running container: set `E2E_BASE_URL` (e.g. `http://127.0.0.1:8000`) and run
 `npx playwright test` - Playwright then targets that URL instead of starting a dev server.
 
+## Auth (MVP)
+
+`lib/auth.ts` checks the hardcoded `user` / `password` and stores a session flag in
+localStorage. `App` reads that flag after mount and renders `LoginForm` or `KanbanBoard`
+(with a logout button). This is a client-side gate only - acceptable for the MVP because the
+board is still in-memory. Real enforcement moves to the backend once the API exists.
+
 ## Known gaps for the full app
 
-- No API client, no auth, no persistence, no AI sidebar - all added in later plan parts. Board
+- No API client, no persistence, no AI sidebar - all added in later plan parts. Board
   handlers in `KanbanBoard` (`onRename`, `onAddCard`, `onDeleteCard`, drag move) are the
   integration points for backend persistence.
