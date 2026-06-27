@@ -244,23 +244,29 @@ Success criteria:
 
 ---
 
-## Part 9: AI over the Kanban with Structured Outputs
+## Part 9: AI over the Kanban with Structured Outputs - DONE
 
 Goal: the AI receives the board JSON + the user's question + conversation history, and returns a
 structured response containing a reply to the user and an optional board update.
 
 Substeps:
-- [ ] Define the structured output schema: `{ reply: string, board_update?: BoardData | null }`
-      (or a documented diff form). Pick the shape that is simplest for the frontend to apply.
-- [ ] Add `POST /api/chat` accepting `{ message: string, history: Message[] }`; the backend loads the
-      current board, builds the prompt (board JSON + history + message), and calls the model with
-      Structured Outputs.
-- [ ] Validate the model's structured response; if it includes a `board_update`, persist it via the
+- [x] Define the structured output schema: `{ reply: string, board_update?: <board> | null }`.
+      Uses an array-based board shape (cards inlined per column) so the strict `json_schema` has no
+      open-ended maps; converted to/from `BoardData` on the backend.
+- [x] Add `POST /api/chat` accepting `{ message: string, history: Message[] }`; the backend loads the
+      current board, builds the prompt (board + history + message), and calls the model with
+      Structured Outputs (strict `json_schema`, not plain JSON mode).
+- [x] Validate the model's structured response; if it includes a `board_update`, persist it via the
       Part 6 board logic.
-- [ ] Return `{ reply, board_changed: boolean }` (and the new board, or let the frontend re-fetch).
-- [ ] Guardrails: validate the update against the schema before saving; reject malformed updates safely.
-- [ ] Tests: `pytest` with mocked structured responses covering: reply only; reply + valid board update
-      (persisted); malformed update (rejected, board unchanged). Document one live manual test.
+- [x] Return `{ reply, board_changed: boolean }` (frontend re-fetches the board in Part 10).
+- [x] Guardrails: validate the update (Pydantic) before saving; reject malformed updates safely (502,
+      board unchanged).
+- [x] Tests: `pytest` with mocked structured responses covering: reply only; reply + valid board update
+      (persisted); malformed update (rejected, board unchanged); plus a gated live test. Live-verified
+      end to end: a chat request added a card via structured outputs and the board persisted it.
+
+Note: the `:free` model is intermittently rate-limited (429); a retry succeeds. A non-free model
+would remove this for reliable live use.
 
 Tests:
 - `pytest` passes for all chat scenarios (mocked).

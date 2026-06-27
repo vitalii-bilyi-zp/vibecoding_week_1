@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
 from app import ai, db
-from app.models import BoardData
+from app.models import BoardData, ChatRequest, ChatResult, ai_to_board
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -56,6 +56,28 @@ def ai_check() -> dict[str, str]:
     except Exception as error:  # upstream/network failure
         raise HTTPException(status_code=502, detail=f"AI request failed: {error}")
     return {"model": ai.get_model(), "answer": answer}
+
+
+@api.post("/chat")
+def chat(request: ChatRequest, conn=Depends(get_conn)) -> ChatResult:
+    """Send the board + history + message to the AI. If it returns a board
+    update, validate and persist it; otherwise leave the board unchanged."""
+    board_id = db.get_board_id_for_user(conn)
+    board = BoardData.model_validate(db.read_board(conn, board_id))
+
+    try:
+        response = ai.chat_with_board(request.message, request.history, board)
+    except RuntimeError as error:  # missing/invalid configuration
+        raise HTTPException(status_code=500, detail=str(error))
+    except Exception as error:  # upstream failure or malformed response
+        raise HTTPException(status_code=502, detail=f"AI request failed: {error}")
+
+    board_changed = False
+    if response.board_update is not None:
+        db.save_board(conn, board_id, ai_to_board(response.board_update))
+        board_changed = True
+
+    return ChatResult(reply=response.reply, board_changed=board_changed)
 
 
 @asynccontextmanager

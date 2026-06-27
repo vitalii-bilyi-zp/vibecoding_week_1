@@ -22,6 +22,9 @@ backend/
                      persistence across restart, invalid PUT rejection
     test_ai.py       pytest: /api/ai/check (mocked), error handling, and a live
                      OpenRouter test gated behind RUN_LIVE_AI
+    test_chat.py     pytest: /api/chat reply-only, update persisted, malformed
+                     rejected, missing key, converter round-trip; gated live test
+  conftest.py        Shared `client` fixture (isolated temp DB per test)
   pyproject.toml     Project + dependencies (managed by uv)
   uv.lock            Locked dependency versions
   Dockerfile         Multi-stage: Node builds the frontend export, Python runtime serves it
@@ -38,6 +41,8 @@ export into `app/static`. The repo-root `.dockerignore` trims the build context.
 - `GET /api/board` -> the user's board as `BoardData` (seeds 5 empty columns if none exists)
 - `PUT /api/board` -> full-replace the board from a `BoardData` body; returns the saved board
 - `GET /api/ai/check` -> connectivity probe; asks the model "2+2" and returns `{model, answer}`
+- `POST /api/chat` -> body `{message, history}`; sends the board + history + message to the AI,
+  persists any board update it returns, and replies `{reply, board_changed}`
 - `GET /` -> static `index.html`
 
 API routes are registered before the `/` static mount, so they take precedence over the
@@ -79,9 +84,22 @@ from Part 6).
 
 `app/ai.py` talks to OpenRouter via the `openai` SDK (OpenRouter is OpenAI-compatible),
 using `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (default `openai/gpt-oss-120b:free`) from
-the environment. `ask(prompt)` sends a single message and returns the text reply; a missing
-key raises a clear `RuntimeError` (surfaced as HTTP 500 by `/api/ai/check`). Tests mock
-`ai.ask`; the live test runs only when `RUN_LIVE_AI` is set.
+the environment. A missing key raises a clear `RuntimeError` (surfaced as HTTP 500). Tests
+mock the AI functions; live tests run only when `RUN_LIVE_AI` is set.
+
+- `ask(prompt)` - single message, returns text (used by `/api/ai/check`).
+- `chat_with_board(message, history, board)` - sends the board (array-based AI shape) plus the
+  conversation and the user message, and requests **structured outputs** via a strict
+  `json_schema` (`CHAT_RESPONSE_SCHEMA`). Returns an `AIChatResponse` (`reply` +
+  optional `board_update`). Plain JSON mode is not enough here - the reasoning model returns an
+  empty object unless the schema is enforced.
+
+Board update flow: `/api/chat` loads the board, calls `chat_with_board`, and if a
+`board_update` is returned, converts it (`ai_to_board`) and persists it via `save_board`.
+A malformed/invalid AI response is rejected (HTTP 502) and the board is left unchanged.
+
+Note: free models (e.g. `:free`) are rate-limited upstream and can intermittently return 429;
+the API surfaces this as a 502 and a retry usually succeeds.
 
 ## Conventions
 
