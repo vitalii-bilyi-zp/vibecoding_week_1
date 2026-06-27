@@ -12,6 +12,7 @@ backend/
     main.py          FastAPI app: API routes + static mount + lifespan (init_db)
     db.py            sqlite3 access: schema, connection, seed, read/save board
     models.py        Pydantic Card/Column/BoardData (mirrors the frontend shape)
+    ai.py            OpenRouter client (openai SDK): get_model / ask(prompt)
     static/
       index.html     Placeholder page for local dev; in the Docker image this dir is
                      replaced by the Next.js export (so / serves the Kanban board)
@@ -19,6 +20,8 @@ backend/
     test_health.py   pytest: /api/health, /api/hello, and / serve correctly
     test_board.py    pytest: board seed, db auto-create, read/write, move, rename,
                      persistence across restart, invalid PUT rejection
+    test_ai.py       pytest: /api/ai/check (mocked), error handling, and a live
+                     OpenRouter test gated behind RUN_LIVE_AI
   pyproject.toml     Project + dependencies (managed by uv)
   uv.lock            Locked dependency versions
   Dockerfile         Multi-stage: Node builds the frontend export, Python runtime serves it
@@ -34,6 +37,7 @@ export into `app/static`. The repo-root `.dockerignore` trims the build context.
 - `GET /api/hello` -> `{"message": "hello world"}`
 - `GET /api/board` -> the user's board as `BoardData` (seeds 5 empty columns if none exists)
 - `PUT /api/board` -> full-replace the board from a `BoardData` body; returns the saved board
+- `GET /api/ai/check` -> connectivity probe; asks the model "2+2" and returns `{model, answer}`
 - `GET /` -> static `index.html`
 
 API routes are registered before the `/` static mount, so they take precedence over the
@@ -70,6 +74,14 @@ scripts/stop.sh      # or scripts\stop.ps1
 These wrap `docker compose` defined in the repo-root `docker-compose.yml`, which builds this
 image, maps port 8000, loads `.env`, and bind-mounts `./data` for the SQLite database (used
 from Part 6).
+
+## AI (OpenRouter)
+
+`app/ai.py` talks to OpenRouter via the `openai` SDK (OpenRouter is OpenAI-compatible),
+using `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` (default `openai/gpt-oss-120b:free`) from
+the environment. `ask(prompt)` sends a single message and returns the text reply; a missing
+key raises a clear `RuntimeError` (surfaced as HTTP 500 by `/api/ai/check`). Tests mock
+`ai.ask`; the live test runs only when `RUN_LIVE_AI` is set.
 
 ## Conventions
 

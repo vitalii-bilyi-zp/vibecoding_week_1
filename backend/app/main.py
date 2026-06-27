@@ -3,10 +3,10 @@ from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 
-from app import db
+from app import ai, db
 from app.models import BoardData
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -44,6 +44,18 @@ def put_board(board: BoardData, conn=Depends(get_conn)) -> BoardData:
     board_id = db.get_board_id_for_user(conn)
     db.save_board(conn, board_id, board)
     return db.read_board(conn, board_id)
+
+
+@api.get("/ai/check")
+def ai_check() -> dict[str, str]:
+    """Connectivity probe: ask the model a trivial question (2+2)."""
+    try:
+        answer = ai.ask("What is 2+2? Reply with just the number.")
+    except RuntimeError as error:  # missing/invalid configuration
+        raise HTTPException(status_code=500, detail=str(error))
+    except Exception as error:  # upstream/network failure
+        raise HTTPException(status_code=502, detail=f"AI request failed: {error}")
+    return {"model": ai.get_model(), "answer": answer}
 
 
 @asynccontextmanager

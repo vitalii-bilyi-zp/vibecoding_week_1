@@ -220,17 +220,18 @@ Success criteria:
 
 ---
 
-## Part 8: AI connectivity
+## Part 8: AI connectivity - DONE
 
 Goal: prove the backend can call the AI via OpenRouter. Minimal "2+2" smoke test.
 
 Substeps:
-- [ ] Add an OpenRouter client in the backend using `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` from `.env`.
-- [ ] Add a temporary/internal endpoint or script that asks the model "what is 2+2?" and returns the answer.
-- [ ] Confirm the model id `openai/gpt-oss-120b` works via OpenRouter.
-- [ ] Add error handling for missing/invalid API key (clear message, no crash loop).
-- [ ] Add a test that exercises the AI path. Use a mocked OpenRouter response for CI determinism; keep a
-      separate, manually-run live smoke test (skipped by default) for the real "2+2" check.
+- [x] Add an OpenRouter client in the backend using `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` from `.env`.
+- [x] Add a temporary/internal endpoint or script that asks the model "what is 2+2?" and returns the answer
+      (`GET /api/ai/check`).
+- [x] Confirm the model id `openai/gpt-oss-120b:free` works via OpenRouter (live check returned "4").
+- [x] Add error handling for missing/invalid API key (clear message, no crash loop).
+- [x] Add a test that exercises the AI path. Use a mocked OpenRouter response for CI determinism; keep a
+      separate, manually-run live smoke test (skipped by default, gated on `RUN_LIVE_AI`) for the real "2+2" check.
 
 Tests:
 - `pytest` passes with the mocked AI test.
