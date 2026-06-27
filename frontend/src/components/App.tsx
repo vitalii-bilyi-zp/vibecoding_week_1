@@ -6,14 +6,19 @@ import { LoginForm } from "@/components/LoginForm";
 import { isAuthenticated, setAuthenticated } from "@/lib/auth";
 
 export const App = () => {
-  const [authed, setAuthed] = useState(false);
-  const [checked, setChecked] = useState(false);
+  // `checked` is false until the persisted session is read after mount.
+  const [session, setSession] = useState({ authed: false, checked: false });
+  const { authed, checked } = session;
 
-  // Read the persisted session after mount (localStorage is client-only).
+  // localStorage is client-only, so the session must be read after mount; for a
+  // static export, reading it during render would cause a hydration mismatch.
   useEffect(() => {
-    setAuthed(isAuthenticated());
-    setChecked(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-time client read
+    setSession({ authed: isAuthenticated(), checked: true });
   }, []);
+
+  const setAuthed = (value: boolean) =>
+    setSession({ authed: value, checked: true });
 
   if (!checked) {
     return null;

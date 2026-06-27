@@ -1,9 +1,9 @@
 # Frontend
 
 A Next.js Kanban board, statically exported (`output: "export"`) and served by the FastAPI
-backend at `/`. A dummy login (`user` / `password`) gates the board; the board state itself
-still lives in React memory only (no backend persistence yet), so reloading resets it to
-`initialData`. Later plan parts add backend persistence and the AI sidebar.
+backend at `/`. A dummy login (`user` / `password`) gates the board. The board is loaded from
+and persisted to the backend API, so changes survive reloads and restarts. The AI sidebar is
+added in a later plan part.
 
 ## Stack
 
@@ -38,11 +38,14 @@ src/
     kanban.test.ts   Unit tests for moveCard / helpers
     auth.ts          Credential check + localStorage session helpers (client-side gate)
     auth.test.ts     Unit tests for auth helpers
+    api.ts           fetchBoard / saveBoard - same-origin /api/board client
+    api.test.ts      API client tests (mocked fetch)
   test/
     setup.ts         Vitest setup (jest-dom matchers)
     vitest.d.ts      Type augmentation for matchers
+    helpers.ts       Test helpers: seeded empty board + stubFetch
 tests/
-  kanban.spec.ts     Playwright e2e (load board, add card, move card)
+  kanban.spec.ts     Playwright e2e (auth + board load/add/move + persistence across reload)
 public/              Static assets
 ```
 
@@ -54,19 +57,26 @@ type Column = { id: string; title: string; cardIds: string[] };  // order is car
 type BoardData = { columns: Column[]; cards: Record<string, Card> };  // cards keyed by id
 ```
 
-- `initialData` - seed board with 5 columns (Backlog, Discovery, In Progress, Review, Done) and 8 cards.
 - `moveCard(columns, activeId, overId)` - pure reorder/move; handles same-column reorder, move to another
   column, and dropping onto an empty column. Returns a new `columns` array; never mutates.
 - `createId(prefix)` - generates `${prefix}-<random><time>` ids for new cards.
 
+The board content comes from the backend (`GET /api/board`); there is no hardcoded seed in the
+frontend anymore.
+
 Note: column order is fixed (5 columns). Card order within a column is the array order of `cardIds`.
 
-## State ownership
+## State ownership and persistence
 
-`KanbanBoard` is the only stateful component. It holds `board: BoardData` and `activeCardId`, and passes
-handlers down: `onRename`, `onAddCard`, `onDeleteCard`, plus dnd-kit's `onDragStart`/`onDragEnd`.
-Children are presentational and call these handlers. When backend persistence is added, these handlers are
-the integration points to swap local `setBoard` updates for API calls.
+`KanbanBoard` is the only stateful component. It holds `board: BoardData | null` (null while
+loading) and `activeCardId`, and passes handlers down: `onRename`, `onCommitRename`,
+`onAddCard`, `onDeleteCard`, plus dnd-kit's `onDragStart`/`onDragEnd`. Children are
+presentational.
+
+On mount it loads the board via `fetchBoard()` (showing a loading then an error state as
+needed). Mutations are optimistic: `update(next)` sets local state and fires `saveBoard(next)`
+(full-board PUT). Column rename is the exception - it updates local state on each keystroke and
+only persists on blur (`onCommitRename`), so typing a title does not PUT per character.
 
 ## Conventions
 
@@ -97,11 +107,10 @@ E2E against the running container: set `E2E_BASE_URL` (e.g. `http://127.0.0.1:80
 
 `lib/auth.ts` checks the hardcoded `user` / `password` and stores a session flag in
 localStorage. `App` reads that flag after mount and renders `LoginForm` or `KanbanBoard`
-(with a logout button). This is a client-side gate only - acceptable for the MVP because the
-board is still in-memory. Real enforcement moves to the backend once the API exists.
+(with a logout button). This is a client-side gate only; the backend board API is not yet
+authenticated (single hardcoded user). Real enforcement is a future extension.
 
 ## Known gaps for the full app
 
-- No API client, no persistence, no AI sidebar - all added in later plan parts. Board
-  handlers in `KanbanBoard` (`onRename`, `onAddCard`, `onDeleteCard`, drag move) are the
-  integration points for backend persistence.
+- The backend board API is unauthenticated and uses one hardcoded user.
+- No AI sidebar yet - added in the final plan part.

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -13,14 +13,16 @@ import {
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
-import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
+import { createId, moveCard, type BoardData } from "@/lib/kanban";
+import { fetchBoard, saveBoard } from "@/lib/api";
 
 type KanbanBoardProps = {
   onLogout?: () => void;
 };
 
 export const KanbanBoard = ({ onLogout }: KanbanBoardProps = {}) => {
-  const [board, setBoard] = useState<BoardData>(() => initialData);
+  const [board, setBoard] = useState<BoardData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
   const sensors = useSensors(
@@ -29,7 +31,35 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps = {}) => {
     })
   );
 
-  const cardsById = useMemo(() => board.cards, [board.cards]);
+  // Load the persisted board after mount.
+  useEffect(() => {
+    let active = true;
+    fetchBoard()
+      .then((data) => {
+        if (active) {
+          setBoard(data);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setError("Could not load your board.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Persist a board to the backend (optimistic: state is updated by the caller).
+  const save = (next: BoardData) => {
+    saveBoard(next).catch(() => setError("Could not save your changes."));
+  };
+
+  // Update local state and persist in one step.
+  const update = (next: BoardData) => {
+    setBoard(next);
+    save(next);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveCardId(event.active.id as string);
@@ -39,61 +69,89 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps = {}) => {
     const { active, over } = event;
     setActiveCardId(null);
 
-    if (!over || active.id === over.id) {
+    if (!board || !over || active.id === over.id) {
       return;
     }
 
-    setBoard((prev) => ({
-      ...prev,
-      columns: moveCard(prev.columns, active.id as string, over.id as string),
-    }));
+    update({
+      ...board,
+      columns: moveCard(board.columns, active.id as string, over.id as string),
+    });
   };
 
+  // Rename updates local state on every keystroke but only persists on blur,
+  // so typing a title does not fire a request per character.
   const handleRenameColumn = (columnId: string, title: string) => {
-    setBoard((prev) => ({
-      ...prev,
-      columns: prev.columns.map((column) =>
+    if (!board) {
+      return;
+    }
+    setBoard({
+      ...board,
+      columns: board.columns.map((column) =>
         column.id === columnId ? { ...column, title } : column
       ),
-    }));
+    });
+  };
+
+  const handleCommitRename = () => {
+    if (board) {
+      save(board);
+    }
   };
 
   const handleAddCard = (columnId: string, title: string, details: string) => {
+    if (!board) {
+      return;
+    }
     const id = createId("card");
-    setBoard((prev) => ({
-      ...prev,
+    update({
+      ...board,
       cards: {
-        ...prev.cards,
+        ...board.cards,
         [id]: { id, title, details: details || "No details yet." },
       },
-      columns: prev.columns.map((column) =>
+      columns: board.columns.map((column) =>
         column.id === columnId
           ? { ...column, cardIds: [...column.cardIds, id] }
           : column
       ),
-    }));
-  };
-
-  const handleDeleteCard = (columnId: string, cardId: string) => {
-    setBoard((prev) => {
-      return {
-        ...prev,
-        cards: Object.fromEntries(
-          Object.entries(prev.cards).filter(([id]) => id !== cardId)
-        ),
-        columns: prev.columns.map((column) =>
-          column.id === columnId
-            ? {
-                ...column,
-                cardIds: column.cardIds.filter((id) => id !== cardId),
-              }
-            : column
-        ),
-      };
     });
   };
 
-  const activeCard = activeCardId ? cardsById[activeCardId] : null;
+  const handleDeleteCard = (columnId: string, cardId: string) => {
+    if (!board) {
+      return;
+    }
+    update({
+      ...board,
+      cards: Object.fromEntries(
+        Object.entries(board.cards).filter(([id]) => id !== cardId)
+      ),
+      columns: board.columns.map((column) =>
+        column.id === columnId
+          ? { ...column, cardIds: column.cardIds.filter((id) => id !== cardId) }
+          : column
+      ),
+    });
+  };
+
+  if (error && !board) {
+    return (
+      <main className="grid min-h-screen place-items-center px-6">
+        <p className="text-sm font-medium text-[var(--secondary-purple)]">{error}</p>
+      </main>
+    );
+  }
+
+  if (!board) {
+    return (
+      <main className="grid min-h-screen place-items-center px-6">
+        <p className="text-sm font-medium text-[var(--gray-text)]">Loading your board...</p>
+      </main>
+    );
+  }
+
+  const activeCard = activeCardId ? board.cards[activeCardId] : null;
 
   return (
     <div className="relative overflow-hidden">
@@ -135,6 +193,11 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps = {}) => {
               </div>
             </div>
           </div>
+          {error && (
+            <p role="alert" className="text-sm font-medium text-[var(--secondary-purple)]">
+              {error}
+            </p>
+          )}
           <div className="flex flex-wrap items-center gap-4">
             {board.columns.map((column) => (
               <div
@@ -161,6 +224,7 @@ export const KanbanBoard = ({ onLogout }: KanbanBoardProps = {}) => {
                 column={column}
                 cards={column.cardIds.map((cardId) => board.cards[cardId])}
                 onRename={handleRenameColumn}
+                onCommitRename={handleCommitRename}
                 onAddCard={handleAddCard}
                 onDeleteCard={handleDeleteCard}
               />

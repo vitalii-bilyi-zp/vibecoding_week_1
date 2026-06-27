@@ -193,18 +193,19 @@ Success criteria:
 
 ---
 
-## Part 7: Frontend uses the Backend
+## Part 7: Frontend uses the Backend - DONE
 
 Goal: replace in-memory board state with real API calls so the board is persistent.
 
 Substeps:
-- [ ] Add a small API client in the frontend (`fetch` wrapper) for `GET`/`PUT /api/board`.
-- [ ] On load (after login), fetch the board from the API instead of using `initialData`.
-- [ ] Route the existing handlers (`onRename`, `onAddCard`, `onDeleteCard`, drag move) through the API so
-      changes persist; keep optimistic UI smooth.
-- [ ] Handle loading and error states minimally (no over-engineering).
-- [ ] Ensure the static-export build still works (client-side fetch to same-origin `/api`).
-- [ ] Update tests: frontend unit tests for the API client and updated handlers (mock fetch); Playwright
+- [x] Add a small API client in the frontend (`fetch` wrapper) for `GET`/`PUT /api/board`.
+- [x] On load (after login), fetch the board from the API instead of using `initialData`
+      (the hardcoded seed was removed from the frontend).
+- [x] Route the existing handlers (`onRename`, `onAddCard`, `onDeleteCard`, drag move) through the API so
+      changes persist; keep optimistic UI smooth (rename persists on blur).
+- [x] Handle loading and error states minimally (no over-engineering).
+- [x] Ensure the static-export build still works (client-side fetch to same-origin `/api`).
+- [x] Update tests: frontend unit tests for the API client and updated handlers (mock fetch); Playwright
       e2e against the running container verifying persistence (change, reload, change is still there).
 
 Tests:

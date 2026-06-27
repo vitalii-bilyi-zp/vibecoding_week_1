@@ -1,4 +1,22 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+
+// A known board state used to isolate board tests from each other and from
+// previous runs (the backend persists data). Backlog holds one seed card.
+const RESET_BOARD = {
+  columns: [
+    { id: "col-backlog", title: "Backlog", cardIds: ["card-seed"] },
+    { id: "col-discovery", title: "Discovery", cardIds: [] },
+    { id: "col-progress", title: "In Progress", cardIds: [] },
+    { id: "col-review", title: "Review", cardIds: [] },
+    { id: "col-done", title: "Done", cardIds: [] },
+  ],
+  cards: {
+    "card-seed": { id: "card-seed", title: "Seed task", details: "Starting point." },
+  },
+};
+
+const resetBoard = (request: APIRequestContext) =>
+  request.put("/api/board", { data: RESET_BOARD });
 
 const login = async (page: Page) => {
   await page.goto("/");
@@ -40,13 +58,15 @@ test.describe("authentication", () => {
 });
 
 test.describe("kanban board", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    await resetBoard(request);
     await login(page);
   });
 
-  test("loads the kanban board", async ({ page }) => {
+  test("loads the board from the backend", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
     await expect(page.locator('[data-testid^="column-"]')).toHaveCount(5);
+    await expect(page.getByText("Seed task")).toBeVisible();
   });
 
   test("adds a card to a column", async ({ page }) => {
@@ -59,7 +79,7 @@ test.describe("kanban board", () => {
   });
 
   test("moves a card between columns", async ({ page }) => {
-    const card = page.getByTestId("card-card-1");
+    const card = page.getByTestId("card-card-seed");
     const targetColumn = page.getByTestId("column-col-review");
     const cardBox = await card.boundingBox();
     const columnBox = await targetColumn.boundingBox();
@@ -78,6 +98,27 @@ test.describe("kanban board", () => {
       { steps: 12 }
     );
     await page.mouse.up();
-    await expect(targetColumn.getByTestId("card-card-1")).toBeVisible();
+    await expect(targetColumn.getByTestId("card-card-seed")).toBeVisible();
+  });
+
+  test("persists a new card across a reload", async ({ page }) => {
+    const firstColumn = page.locator('[data-testid^="column-"]').first();
+    await firstColumn.getByRole("button", { name: /add a card/i }).click();
+    await firstColumn.getByPlaceholder("Card title").fill("Persisted card");
+    await firstColumn.getByPlaceholder("Details").fill("via backend");
+
+    // Wait for the save to reach the backend before reloading.
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes("/api/board") &&
+          response.request().method() === "PUT" &&
+          response.ok()
+      ),
+      firstColumn.getByRole("button", { name: /add card/i }).click(),
+    ]);
+
+    await page.reload();
+    await expect(page.getByText("Persisted card")).toBeVisible();
   });
 });

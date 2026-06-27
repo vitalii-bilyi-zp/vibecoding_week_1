@@ -1,9 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { App } from "@/components/App";
+import { stubFetch } from "@/test/helpers";
+
+beforeEach(() => {
+  stubFetch();
+});
 
 afterEach(() => {
   window.localStorage.clear();
+  vi.unstubAllGlobals();
 });
 
 describe("App auth gate", () => {
